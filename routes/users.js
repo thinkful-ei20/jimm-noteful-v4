@@ -5,14 +5,21 @@ const mongoose = require('mongoose');
 
 const User = require('../models/user');
 
-router.post('/users', (req, res, next) => {
+router.post('/', (req, res, next) => {
+  const password = req.body.password;
   const newUser = { 
     fullname: req.body.fullname,
     username: req.body.username,
-    password: req.body.password,
   };
+
+
   
-  User.create(newUser)
+
+  return User.hashPassword(req.body.password)
+    .then(digest => {
+      newUser.password = digest;
+      return User.create(newUser);
+    })
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
@@ -24,5 +31,6 @@ router.post('/users', (req, res, next) => {
       next(err);
     });
 });
+
 
 module.exports = router;
