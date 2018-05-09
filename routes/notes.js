@@ -6,6 +6,8 @@ const passport = require('passport');
 const mongoose = require('mongoose');
 
 const Note = require('../models/note');
+const Tag = require('../models/tag');
+const Folder = require('../models/folder');
 
 // Protect endpoints using JWT Strategy
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
@@ -13,8 +15,9 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId } = req.query;
+  const userId = req.user.id;
 
-  let filter = {};
+  let filter = {userId: userId};
 
   if (searchTerm) {
     // filter.title = { $regex: searchTerm };
@@ -43,6 +46,7 @@ router.get('/', (req, res, next) => {
 /* ========== GET/READ A SINGLE ITEM ========== */
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -50,7 +54,7 @@ router.get('/:id', (req, res, next) => {
     return next(err);
   }
 
-  Note.findById(id)
+  Note.findOne({_id: id, userId: userId})
     .populate('tags')
     .then(result => {
       if (result) {
@@ -66,7 +70,8 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { title, content, folderId, tags = [] } = req.body;
+  const { title, content, tags = [], folderId } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -75,12 +80,18 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
+  
   if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
     const err = new Error('The `folderId` is not valid');
     err.status = 400;
     return next(err);
   }
-
+  if (Folder.find({_id: folderId}).userId !== userId){
+    const err = new Error(`Thats folder, ${folderId},  does not belong to you`);
+    err.status = 401;
+    return next(err);
+  }
+  
   if (tags) {
     tags.forEach((tag) => {
       if (!mongoose.Types.ObjectId.isValid(tag)) {
@@ -88,10 +99,15 @@ router.post('/', (req, res, next) => {
         err.status = 400;
         return next(err);
       }
+      if (Tag.find({_id: tag}).userId !== userId){
+        const err = new Error(`Thats tag, ${tag},  does not belong to you`);
+        err.status = 401;
+        return next(err);
+      }
     });
   }
 
-  Note.create({ title, content, folderId, tags })
+  Note.create({ title, content, folderId, tags, userId })
     .then(result => {
       res
         .location(`${req.originalUrl}/${result.id}`)
@@ -106,7 +122,13 @@ router.post('/', (req, res, next) => {
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
-  const { title, content, folderId, tags = [] } = req.body;
+  const { title, content, tags = [], folderId } = req.body;
+  const userId = req.user.id;
+  
+  // let { folderId } = req.body;
+  // if(folderId === ''){
+  //   folderId = null;
+  // }
 
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -126,6 +148,11 @@ router.put('/:id', (req, res, next) => {
     err.status = 400;
     return next(err);
   }
+  if (Folder.find({_id: folderId}).userId !== userId){
+    const err = new Error(`Thats folder, ${folderId},  does not belong to you`);
+    err.status = 401;
+    return next(err);
+  }
 
   if (tags) {
     tags.forEach((tag) => {
@@ -134,10 +161,15 @@ router.put('/:id', (req, res, next) => {
         err.status = 400;
         return next(err);
       }
+      if (Tag.find({_id: tag}).userId !== userId){
+        const err = new Error(`Thats tag, ${tag},  does not belong to you`);
+        err.status = 401;
+        return next(err);
+      }
     });
   }
 
-  Note.findByIdAndUpdate(id, { title, content, folderId, tags }, { new: true })
+  Note.findByIdAndUpdate(id, { title, content, folderId, tags, userId }, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -153,8 +185,9 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
-  Note.findByIdAndRemove(id)
+  Note.findOne({_id: id, userId}).remove()
     .then(() => {
       res.status(204).end();
     })
@@ -164,3 +197,5 @@ router.delete('/:id', (req, res, next) => {
 });
 
 module.exports = router;
+
+
