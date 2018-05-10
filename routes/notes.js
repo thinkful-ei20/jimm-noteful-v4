@@ -169,7 +169,7 @@ router.put('/:id', (req, res, next) => {
     });
   }
 
-  Note.findByIdAndUpdate(id, { title, content, folderId, tags, userId }, { new: true })
+  Note.findOneAndUpdate({_id: id, userId}, { title, content, folderId, tags, userId }, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
