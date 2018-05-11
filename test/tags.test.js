@@ -133,7 +133,7 @@ describe('Noteful API - Tags', function () {
 
   });
 
-  describe('POST /api/tags', function () {
+  describe.only('POST /api/tags', function () {
 
     it('should create and return a new item when provided valid data', function () {
       const newItem = {
@@ -142,6 +142,7 @@ describe('Noteful API - Tags', function () {
       let body;
       return chai.request(app)
         .post('/api/tags')
+        .set('Authorization', `Bearer ${token}`)
         .send(newItem)
         .then(function (res) {
           body = res.body;
@@ -165,6 +166,7 @@ describe('Noteful API - Tags', function () {
 
       return chai.request(app)
         .post('/api/tags')
+        .set('Authorization', `Bearer ${token}`)
         .send(newItem)
         .catch(err => err.response)
         .then(res => {
@@ -180,7 +182,7 @@ describe('Noteful API - Tags', function () {
       return Tag.findOne().select('id name')
         .then(data => {
           const newItem = { 'name': data.name };
-          return chai.request(app).post('/api/tags').send(newItem);
+          return chai.request(app).post('/api/tags').set('Authorization', `Bearer ${token}`).send(newItem);
         })
         .catch(err => err.response)
         .then(res => {
