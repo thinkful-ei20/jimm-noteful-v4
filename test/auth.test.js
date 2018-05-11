@@ -11,7 +11,7 @@ const User = require('../models/user');
 const expect = chai.expect;
 chai.use(chaiHttp);
 
-describe.only('Noteful API - Login', function () {
+describe('Noteful API - Login', function () {
   this.timeout(10000);
   const fullname = 'Example User';
   const username = 'exampleUser';

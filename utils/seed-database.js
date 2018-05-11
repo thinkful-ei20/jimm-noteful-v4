@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 
-const { MONGODB_URI } = require('../config');
+const { TEST_MONGODB_URI } = require('../config');
 const Note = require('../models/note');
 const Folder = require('../models/folder');
 const Tag = require('../models/tag');
@@ -13,7 +13,7 @@ const seedFolders = require('../db/seed/folders');
 const seedTags = require('../db/seed/tags');
 const seedUsers = require('../db/seed/users');
 
-mongoose.connect(MONGODB_URI)
+mongoose.connect(TEST_MONGODB_URI)
   .then(() => mongoose.connection.db.dropDatabase())
   .then(() => {
     return Promise.all(seedUsers.map(user => User.hashPassword(user.password)));
